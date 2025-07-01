@@ -1,3 +1,6 @@
+import {RewardLog} from "./RewardLog.ts";
+import {RewardLogger} from "./RewardLogger.ts";
+
 export class Node {
     public id: number;
     public username: number;
@@ -12,6 +15,7 @@ export class Node {
     public miningRewardSharedCommission: number; // Hoa hồng thưởng đào ASD đồng hưởng cho user các cấp trên (Max 20 tầng)
     public miningRewardOtherCommission: number; // Phần hoa hồng đào ASD cho các hoạt động khác (nếu có)
     public buyLicenseCommissionReceived: number; // Hoa hồng mua license đã nhận (Dùng để check maxout)
+    public totalMining: number; // Tổng số ASD đã đào được
 
     constructor(_id: number, _username: number, _level: number = 0) {
         this.id = _id;
@@ -27,6 +31,7 @@ export class Node {
         this.miningRewardSharedCommission = 0;
         this.miningRewardOtherCommission = 0;
         this.buyLicenseCommissionReceived = 0;
+        this.totalMining = 0;
     }
 
     // Getters and Setters
@@ -111,6 +116,18 @@ export class Node {
         }
 
         this.buyLicenseCommissionReceived = _buyLicenseCommissionReceived;
+    }
+
+    public getTotalMining(): number {
+        return this.buyLicenseCommission;
+    }
+
+    public setTotalMining(_totalMining: number): void {
+        if (_totalMining < 0) {
+            throw new Error("Total mining cannot be negative.");
+        }
+
+        this.totalMining = _totalMining;
     }
 
     public getBuyLicenseCommission(): number {
@@ -316,24 +333,28 @@ export class Node {
         return layer;
     }
 
-    private validateParentLevel(): boolean {
+    /*
+        Function to validate if the parent node meets the requirements for level
+     */
+    public validateParentLevel(checkLevel?: number): boolean {
         // Kiểm tra xem bố đã mua license chưa
-        if (this.getTotalLicensePurchase() < Node.getLicenseRequirement(this.getLevel())) {
-            console.log(`Parent ${this.username} does not meet the license requirement for level ${this.getLevel()}.`);
+        const currentLevel = checkLevel ?? this.getLevel();
+        if (this.getTotalLicensePurchase() < Node.getLicenseRequirement(currentLevel)) {
+            console.log(`Parent ${this.username} does not meet the license requirement for level ${currentLevel}.`);
             return false;
         }
 
         // Kiểm trả xem doanh số mua license của bố có đủ để nhận hoa hồng không
-        if (this.getTotalSystemSales() < Node.getSalesRequirement(this.getLevel())) {
-            console.log(`Parent ${this.username} does not meet the sales requirement for buy license commission for level ${this.getLevel()}.`);
+        if (this.getTotalSystemSales() < Node.getSalesRequirement(currentLevel)) {
+            console.log(`Parent ${this.username} does not meet the sales requirement for buy license commission for level ${currentLevel}.`);
             return false;
         }
 
         // Kiểm tra xem số lượng F1 (mua 3+ license) có đủ để nhận hoa hồng không
         const f1Count = this.getChildren().filter(child => child.getTotalLicensePurchase() >= 3).length;
 
-        if (f1Count < Node.getF1CountRequirement(this.getLevel())) {
-            console.log(`Parent ${this.username} does not have enough F1s (3+ licenses) to receive buy license commission for level ${this.getLevel()}.`);
+        if (f1Count < Node.getF1CountRequirement(currentLevel)) {
+            console.log(`Parent ${this.username} does not have enough F1s (3+ licenses) to receive buy license commission for level ${currentLevel}.`);
             return false;
         }
 
@@ -349,12 +370,12 @@ export class Node {
         // Tính hoa hồng mua license tối đa mà bố có thể nhận
         const maxCommission = totalSales * Node.MAXOUT_LICENSE_COMMISSION_RATE;
 
-        if(receivedCommission >= maxCommission) {
+        if (receivedCommission >= maxCommission) {
             console.log(`Parent ${this.username} has already received the maximum license commission.`);
             return 0; // Không trả hoa hồng nếu đã maxout
         }
 
-        if(receivedCommission + amount > maxCommission) {
+        if (receivedCommission + amount > maxCommission) {
             return maxCommission - receivedCommission; // Trả hoa hồng tối đa có thể nhận
         }
 
@@ -378,6 +399,15 @@ export class Node {
                 const commissionToReceive = parent.checkMaxoutLicenseCommission(commission, licensePrice);
                 // Cập nhật hoa hồng mua license cho bố
                 parent.buyLicenseCommission += commissionToReceive;
+
+                // Create a reward log for the commission
+                RewardLogger.addLog(
+                    parent.getId(),
+                    this.getId(),
+                    "buy_license_commission",
+                    commissionToReceive,
+                    `Commission for buying ${quantity} licenses at price ${licensePrice} each.`,
+                )
             } else {
                 console.log(`Parent ${parent.username} does not qualify for receive license commission.`);
             }
@@ -400,7 +430,17 @@ export class Node {
         let remainingReward = amount * Node.MINING_REWARD_COMMISSION_RATE_MAX;
 
         // Tính hoa hồng đào ASD cho bố trực tiếp
-        const actualCommission = this.processMiningRewardCommission(amount);
+        const actualCommission = this.processMiningRewardCommission(amount, remainingReward);
+
+        // Create a reward log for the mining reward
+        RewardLogger.addLog(
+            this.getId(),
+            null,
+            "mining_reward",
+            miningReward,
+            `Mining reward of ${miningReward} received.`,
+        )
+
 
         return {
             remainingReward: remainingReward - actualCommission,
@@ -411,10 +451,10 @@ export class Node {
         }
     }
 
-    private processMiningRewardCommission(amount: number): number {
+    private processMiningRewardCommission(amount: number, maxRewardCommission: number): number {
         const parent = this.getParent();
         if (parent) {
-            if(!parent.validateParentLevel()) {
+            if (!parent.validateParentLevel()) {
                 console.log(`Parent ${parent.username} does not qualify for mining reward commission.`);
                 return 0;
             }
@@ -424,34 +464,101 @@ export class Node {
             // Trả thưởng
             parent.miningRewardCommission += actualCommission;
 
+            // Create a reward log for the mining reward commission
+            RewardLogger.addLog(
+                parent.getId(),
+                this.getId(),
+                "mining_reward_commission",
+                actualCommission,
+                `Mining reward commission of ${actualCommission} received.`,
+                maxRewardCommission - actualCommission
+            )
+
             return actualCommission;
         }
 
         return 0; // Không có bố, không trả hoa hồng
     }
 
-    // Trả thưởng hoa hồng đào ASD đồng hưởng cho các cấp trên (Max 20 tầng) theo tuần
-    public rewardMiningShared(amount: number) {
-        // Lấy danh sách các node trên this node, giới hạn ở MAX_LEADER_LAYERS
-        const ancestors = this.getAncestors().slice(0, Node.MAX_LEADER_LAYERS);
-
-        for (let node of ancestors) {
-            if (!node.validateParentLevel()) {
-                console.log(`Node ${node.username} does not qualify for mining reward shared commission.`);
-                continue;
+    // Trả thưởng hoa hồng đào ASD đồng hưởng cho user dựa theo cấp độ của node và tổng số ASD đã đào được
+    public rewardMiningShared(amount: number): {success: boolean, sharedCommission: number, remainingSharedCommission: number} {
+        // Kiểm tra xem có đủ phần thưởng để phân phối không
+        if (amount <= 0) {
+            return {
+                success: false,
+                sharedCommission: 0,
+                remainingSharedCommission: 0
             }
-
-            if(node.getLevel() < 4) {
-                console.log(`Node ${node.username} is not eligible for mining reward shared commission at level ${node.getLevel()}.`);
-                continue;
-            }
-
-            const commissionRate = Node.getMiningRewardSharedCommissionRate(node.getLevel());
-            const commission = amount * commissionRate;
-
-            // Cập nhật hoa hồng đào ASD đồng hưởng cho node
-            node.miningRewardSharedCommission += commission;
-            console.log(`Node ${node.username} received shared mining reward commission of ${commission} for level ${node.getLevel()}.`);
         }
+
+        if (!this.validateParentLevel(4)) {
+            console.log(`User ${this.username} does not qualify for mining reward shared commission.`);
+            return {
+                success: false,
+                sharedCommission: 0,
+                remainingSharedCommission: 0
+            }
+        }
+        const descendants = this.getDescendants().filter(descendant => descendant.getLayer() <= Node.MAX_LEADER_LAYERS);
+
+        // Tính tổng số ASD đã đào được của tất cả các con
+        let totalMiningDescendants = descendants.reduce(
+            (total, descendant) => total + descendant.getTotalMining(), 0
+        )
+
+        if (totalMiningDescendants === 0) {
+            console.log(`No mining rewards to distribute for user ${this.username}.`);
+            return {
+                success: false,
+                sharedCommission: 0,
+                remainingSharedCommission: 0
+            }
+        }
+
+        let remainingSharedCommission = amount * Node.MINING_REWARD_SHARED_COMMISSION_RATE_MAX;
+
+        const sharedCommissionRate = Node.getMiningRewardSharedCommissionRate(this.getLevel());
+        const sharedCommission = remainingSharedCommission * sharedCommissionRate;
+
+        // Cập nhật hoa hồng đào ASD đồng hưởng cho user
+        this.miningRewardSharedCommission += sharedCommission;
+        console.log(`User ${this.username} received shared mining reward commission of ${sharedCommission}.`);
+
+        // Create a reward log for the mining reward shared commission
+        RewardLogger.addLog(
+            this.getId(),
+            null,
+            "mining_reward_shared_commission",
+            sharedCommission,
+            `Shared mining reward commission of ${sharedCommission} received.`,
+            remainingSharedCommission - sharedCommission
+        );
+
+        return {
+            sharedCommission: sharedCommission,
+            remainingSharedCommission: remainingSharedCommission - sharedCommission,
+            success: true
+        }
+    }
+
+    public getTotalCommission(): number {
+        return this.buyLicenseCommission + this.miningRewardCommission + this.miningRewardSharedCommission + this.miningRewardOtherCommission;
+    }
+
+    public getCommissionByType() {
+        return {
+            buyLicenseCommission: this.buyLicenseCommission,
+            miningRewardCommission: this.miningRewardCommission,
+            miningRewardSharedCommission: this.miningRewardSharedCommission,
+            miningRewardOtherCommission: this.miningRewardOtherCommission
+        };
+    }
+
+    public getAllLogs(): RewardLog[] {
+        return RewardLogger.getAllLogs()
+    }
+
+    public getLogsForUser(userId: number): RewardLog[] {
+        return RewardLogger.getLogsForUser(userId);
     }
 }
