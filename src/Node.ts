@@ -1,5 +1,6 @@
 import {RewardLog} from "./RewardLog.ts";
 import {RewardLogger} from "./RewardLogger.ts";
+import {Logger} from "./Logger.ts";
 
 export class Node {
     public id: number;
@@ -340,13 +341,13 @@ export class Node {
         // Kiểm tra xem bố đã mua license chưa
         const currentLevel = checkLevel ?? this.getLevel();
         if (this.getTotalLicensePurchase() < Node.getLicenseRequirement(currentLevel)) {
-            console.log(`Parent ${this.username} does not meet the license requirement for level ${currentLevel}.`);
+            Logger.warn(`Parent ${this.username} không đủ điều kiện license cho level ${currentLevel}.`)
             return false;
         }
 
         // Kiểm trả xem doanh số mua license của bố có đủ để nhận hoa hồng không
         if (this.getTotalSystemSales() < Node.getSalesRequirement(currentLevel)) {
-            console.log(`Parent ${this.username} does not meet the sales requirement for buy license commission for level ${currentLevel}.`);
+            Logger.warn(`Parent ${this.username} không đủ doanh số cho level ${currentLevel}.`);
             return false;
         }
 
@@ -354,7 +355,7 @@ export class Node {
         const f1Count = this.getChildren().filter(child => child.getTotalLicensePurchase() >= 3).length;
 
         if (f1Count < Node.getF1CountRequirement(currentLevel)) {
-            console.log(`Parent ${this.username} does not have enough F1s (3+ licenses) to receive buy license commission for level ${currentLevel}.`);
+            Logger.warn(`Parent ${this.username} không đủ F1 (3+ licenses) cho level ${currentLevel}.`);
             return false;
         }
 
@@ -371,7 +372,7 @@ export class Node {
         const maxCommission = totalSales * Node.MAXOUT_LICENSE_COMMISSION_RATE;
 
         if (receivedCommission >= maxCommission) {
-            console.log(`Parent ${this.username} has already received the maximum license commission.`);
+            Logger.warn(`Parent ${this.username} đã đạt giới hạn hoa hồng license.`);
             return 0; // Không trả hoa hồng nếu đã maxout
         }
 
@@ -387,7 +388,7 @@ export class Node {
             throw new Error("Quantity must be greater than 0.");
         }
 
-        console.log(`User ${this.username} is buying ${quantity} licenses at price ${licensePrice} each.`);
+        Logger.info(`User ${this.username} đang mua ${quantity} license với giá ${licensePrice}.`);
 
         this.totalLicensePurchase += quantity;
 
@@ -399,7 +400,7 @@ export class Node {
                 const commissionToReceive = parent.checkMaxoutLicenseCommission(commission, licensePrice);
                 // Cập nhật hoa hồng mua license cho bố
                 parent.buyLicenseCommission += commissionToReceive;
-
+                Logger.success(`Parent ${parent.username} nhận được ${commissionToReceive.toFixed(2)} hoa hồng mua license.`);
                 // Create a reward log for the commission
                 RewardLogger.addLog(
                     parent.getId(),
@@ -409,7 +410,7 @@ export class Node {
                     `Commission for buying ${quantity} licenses at price ${licensePrice} each.`,
                 )
             } else {
-                console.log(`Parent ${parent.username} does not qualify for receive license commission.`);
+                Logger.warn(`Parent ${parent.username} không đủ điều kiện nhận hoa hồng license.`);
             }
         }
 
@@ -421,11 +422,11 @@ export class Node {
             throw new Error("Reward must be greater than 0.");
         }
 
-        console.log(`User ${this.username} is receiving mining reward of ${amount}.`);
+        Logger.info(`User ${this.username} đang nhận thưởng đào ${amount} ASD.`);
 
         const miningReward = amount * Node.MINING_REWARD_RATES;
         this.miningReward += miningReward
-
+        Logger.success(`User ${this.username} nhận được ${miningReward.toFixed(4)} thưởng đào cá nhân.`);
         // Phần dư hoa hồng đào ASD sẽ được trả về hệ thống
         let remainingReward = amount * Node.MINING_REWARD_COMMISSION_RATE_MAX;
 
@@ -455,7 +456,7 @@ export class Node {
         const parent = this.getParent();
         if (parent) {
             if (!parent.validateParentLevel()) {
-                console.log(`Parent ${parent.username} does not qualify for mining reward commission.`);
+                Logger.warn(`Parent ${parent.username} không đủ điều kiện nhận hoa hồng đào.`);
                 return 0;
             }
             const commissionRate = Node.getMiningRewardCommissionRate(parent.getLevel());
@@ -463,6 +464,7 @@ export class Node {
 
             // Trả thưởng
             parent.miningRewardCommission += actualCommission;
+            Logger.success(`Parent ${parent.username} nhận được ${actualCommission.toFixed(4)} hoa hồng đào trực tiếp.`);
 
             // Create a reward log for the mining reward commission
             RewardLogger.addLog(
@@ -492,7 +494,7 @@ export class Node {
         }
 
         if (!this.validateParentLevel(4)) {
-            console.log(`User ${this.username} does not qualify for mining reward shared commission.`);
+            Logger.warn(`User ${this.username} không đủ điều kiện nhận hoa hồng đồng hưởng.`);
             return {
                 success: false,
                 sharedCommission: 0,
@@ -507,7 +509,7 @@ export class Node {
         )
 
         if (totalMiningDescendants === 0) {
-            console.log(`No mining rewards to distribute for user ${this.username}.`);
+            Logger.info(`Không có thưởng để phân phối cho user ${this.username}.`);
             return {
                 success: false,
                 sharedCommission: 0,
@@ -522,7 +524,7 @@ export class Node {
 
         // Cập nhật hoa hồng đào ASD đồng hưởng cho user
         this.miningRewardSharedCommission += sharedCommission;
-        console.log(`User ${this.username} received shared mining reward commission of ${sharedCommission}.`);
+        Logger.success(`User ${this.username} nhận được ${sharedCommission.toFixed(4)} hoa hồng đồng hưởng.`);
 
         // Create a reward log for the mining reward shared commission
         RewardLogger.addLog(
