@@ -120,7 +120,7 @@ export class Node {
     }
 
     public getTotalMining(): number {
-        return this.buyLicenseCommission;
+        return this.totalMining;
     }
 
     public setTotalMining(_totalMining: number): void {
@@ -362,6 +362,29 @@ export class Node {
         return true;
     }
 
+    public updateLevel(): void {
+        const startLevel = this.level + 1;
+        let newLevel = this.level;
+
+        for (let level = startLevel; level <= 10; level++) {
+            const hasEnoughLicenses = this.totalLicensePurchase >= Node.getLicenseRequirement(level);
+            const hasEnoughSales = this.totalSystemSales >= Node.getSalesRequirement(level);
+            const f1Count = this.getChildren().filter(c => c.totalLicensePurchase >= 3).length;
+            const hasEnoughF1s = f1Count >= Node.getF1CountRequirement(level);
+
+            if (hasEnoughLicenses && hasEnoughSales && hasEnoughF1s) {
+                newLevel = level; // Đủ điều kiện, cập nhật level mới
+            } else {
+                break; // Không đủ điều kiện cho level này, dừng kiểm tra
+            }
+        }
+
+        if (newLevel > this.level) {
+            Logger.success(`User ${this.username} đã được thăng cấp từ Lv${this.level} lên Lv${newLevel}!`);
+            this.level = newLevel;
+        }
+    }
+
     private checkMaxoutLicenseCommission(amount: number, licensePrice: number): number {
         // Lấy tổng doanh số mua license của bố
         const totalSales = this.getTotalLicensePurchase() * licensePrice;
@@ -391,6 +414,7 @@ export class Node {
         Logger.info(`User ${this.username} đang mua ${quantity} license với giá ${licensePrice}.`);
 
         this.totalLicensePurchase += quantity;
+        this.updateLevel();
 
         const parent = this.getParent();
         if (parent) {
@@ -400,7 +424,7 @@ export class Node {
                 const commissionToReceive = parent.checkMaxoutLicenseCommission(commission, licensePrice);
                 // Cập nhật hoa hồng mua license cho bố
                 parent.buyLicenseCommission += commissionToReceive;
-                Logger.success(`Parent ${parent.username} nhận được ${commissionToReceive.toFixed(2)} hoa hồng mua license.`);
+                Logger.success(`Parent ${parent.username} nhận được ${commissionToReceive} hoa hồng mua license.`);
                 // Create a reward log for the commission
                 RewardLogger.addLog(
                     parent.getId(),
@@ -426,7 +450,7 @@ export class Node {
 
         const miningReward = amount * Node.MINING_REWARD_RATES;
         this.miningReward += miningReward
-        Logger.success(`User ${this.username} nhận được ${miningReward.toFixed(4)} thưởng đào cá nhân.`);
+        Logger.success(`User ${this.username} nhận được ${miningReward} thưởng đào cá nhân.`);
         // Phần dư hoa hồng đào ASD sẽ được trả về hệ thống
         let remainingReward = amount * Node.MINING_REWARD_COMMISSION_RATE_MAX;
 
@@ -464,7 +488,7 @@ export class Node {
 
             // Trả thưởng
             parent.miningRewardCommission += actualCommission;
-            Logger.success(`Parent ${parent.username} nhận được ${actualCommission.toFixed(4)} hoa hồng đào trực tiếp.`);
+            Logger.success(`Parent ${parent.username} nhận được ${actualCommission} hoa hồng đào trực tiếp.`);
 
             // Create a reward log for the mining reward commission
             RewardLogger.addLog(
@@ -524,7 +548,7 @@ export class Node {
 
         // Cập nhật hoa hồng đào ASD đồng hưởng cho user
         this.miningRewardSharedCommission += sharedCommission;
-        Logger.success(`User ${this.username} nhận được ${sharedCommission.toFixed(4)} hoa hồng đồng hưởng.`);
+        Logger.success(`User ${this.username} nhận được ${sharedCommission} hoa hồng đồng hưởng.`);
 
         // Create a reward log for the mining reward shared commission
         RewardLogger.addLog(
