@@ -29,6 +29,6 @@
     "declaration": true,
     "emitDeclarationOnly": true,
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "build", "coverage", "scripts/coverage"],
 }

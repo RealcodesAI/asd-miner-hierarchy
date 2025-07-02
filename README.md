@@ -43,7 +43,7 @@ child.buyLicense(1);
 
 -----
 
-### 2\. `rewardMining(amount)`
+### 2\. `rewardMining(amount: number)`
 
 Hàm này mô phỏng việc một người dùng được nhận thưởng từ hoạt động đào ASD của cá nhân họ.
 
@@ -56,6 +56,7 @@ Hàm này mô phỏng việc một người dùng được nhận thưởng từ
     - `miningRewardCommission`: Hoa hồng trả cho người cha.
     - `remainingReward`: Phần dư còn lại từ quỹ hoa hồng 3% để trả về cho hệ thống.
 - **Ví dụ**:
+- **Tham số**: `amount` là số lượng ASD đã đào.
 
 <!-- end list -->
 
@@ -72,7 +73,7 @@ const result = child.rewardMining(1000);
 
 -----
 
-### 3\. `rewardMiningShared()`
+### 3\. `rewardMiningShared(amount: number)`
 
 Hàm này dùng để tính **hoa hồng đồng hưởng** cho một người lãnh đạo (leader) dựa trên hoạt động của toàn bộ tuyến dưới của họ.
 
@@ -83,6 +84,7 @@ Hàm này dùng để tính **hoa hồng đồng hưởng** cho một người l
 - **Tác động**:
     - Cộng hoa hồng tính được vào thuộc tính `miningRewardSharedCommission` của chính leader đó.
 - **Ví dụ**:
+- **Tham số**: `amount` là số lượng ASD đã đào.
 
 <!-- end list -->
 
