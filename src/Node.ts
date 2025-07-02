@@ -3,8 +3,8 @@ import {RewardLogger} from "./RewardLogger.ts";
 import {Logger} from "./Logger.ts";
 
 export class Node {
-    public id: number;
-    public username: number;
+    public id: number; // Sử dụng number hoặc string để hỗ trợ cả ID và username
+    public username: number | string; // Sử dụng number hoặc string để hỗ trợ cả ID và username
     public level: number;
     public parent: Node | null;
     public children: Node[];
@@ -18,7 +18,7 @@ export class Node {
     public buyLicenseCommissionReceived: number; // Hoa hồng mua license đã nhận (Dùng để check maxout)
     public totalMining: number; // Tổng số ASD đã đào được
 
-    constructor(_id: number, _username: number, _level: number = 0) {
+    constructor(_id: number, _username: string | number, _level: number = 0) {
         this.id = _id;
         this.username = _username;
         this.level = _level;
@@ -44,11 +44,11 @@ export class Node {
         this.id = _id;
     }
 
-    public getUsername(): number {
+    public getUsername(): number | string {
         return this.username;
     }
 
-    public setUsername(_username: number): void {
+    public setUsername(_username: number | string): void {
         this.username = _username;
     }
 
