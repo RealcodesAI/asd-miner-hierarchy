@@ -441,6 +441,7 @@ export class Node {
         Logger.info(`User ${this.username} đang mua ${quantity} license với giá ${licensePrice}.`);
 
         this.totalLicensePurchase += quantity;
+        this.totalLicensePurchaseValue += quantity * licensePrice;
         this.updateLevel();
 
         const parent = this.getParent();
@@ -449,8 +450,15 @@ export class Node {
                 const commissionRate = Node.getBuyLicenseCommissionRate(parent.getLevel());
                 const commission = quantity * licensePrice * commissionRate;
                 const commissionToReceive = parent.checkMaxoutLicenseCommission(commission, licensePrice);
-                // Cập nhật hoa hồng mua license cho bố
+                // Cập nhật hoa hồng mua license cho bố và upgrade cho bố
+
                 parent.buyLicenseCommission += commissionToReceive;
+                parent.buyLicenseCommissionReceived += commissionToReceive;
+                parent.totalSystemSales += quantity * licensePrice;
+                if(this.getTotalLicensePurchase() > 3) {
+                    parent.setTotalF1Count(parent.getTotalF1Count() + 1);
+                }
+                parent.updateLevel();
                 Logger.success(`Parent ${parent.username} nhận được ${commissionToReceive} hoa hồng mua license.`);
                 // Create a reward log for the commission
                 RewardLogger.addLog(

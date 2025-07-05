@@ -1,6 +1,6 @@
 {
   "name": "asd-miner-hierarchy",
-  "version": "1.0.3",
+  "version": "1.0.8",
   "description": "A TypeScript library for managing and querying miner hierarchies in the ASDMiner ecosystem.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
