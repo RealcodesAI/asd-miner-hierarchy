@@ -181,6 +181,7 @@ export class Node {
 
     // Số license tối thiểu cho từng cấp
     public static readonly LICENSE_REQUIREMENTS = {
+        0: 0,
         1: 1,
         2: 2,
         3: 5,
@@ -195,6 +196,7 @@ export class Node {
 
     // Tỷ lệ hoa hồng nhận được khi F1 mua license
     public static readonly BUY_LICENSE_COMMISSION_RATES = {
+        0: 0,
         1: 0.1,
         2: 0.1,
         3: 0.1,
@@ -209,6 +211,7 @@ export class Node {
 
     // Tổng doanh số các con từ F1 đến F3 cần tối thiểu để nhận hoa hồng mua license
     public static readonly SALES_REQUIREMENTS = {
+        0: 0,
         1: 100,
         2: 250,
         3: 500,
@@ -223,6 +226,7 @@ export class Node {
 
     // Số lượng F1 (mua 3+ license) cần thiết để nhận hoa hồng mua license
     public static readonly F1_COUNT_REQUIREMENTS = {
+        0: 0,
         1: 2,
         2: 2,
         3: 3,
@@ -238,6 +242,7 @@ export class Node {
     public static readonly MAX_LEADER_LAYERS = 20;
 
     public static readonly MINING_REWARD_COMMISSION_RATES = {
+        0: 0,
         1: 0.01,
         2: 0.01,
         3: 0.015,
@@ -274,36 +279,36 @@ export class Node {
     public static readonly MINING_REWARD_OTHER_COMMISSION_RATE_MAX = 0.02;
 
     public static getLicenseRequirement(level: number): number {
-        if (level < 1 || level > 10) {
-            throw new Error("Level must be between 1 and 10.");
+        if (level < 0 || level > 10) {
+            throw new Error("Level must be between 0 and 10.");
         }
         return this.LICENSE_REQUIREMENTS[level as keyof typeof this.LICENSE_REQUIREMENTS] || 0;
     }
 
     public static getBuyLicenseCommissionRate(level: number): number {
-        if (level < 1 || level > 10) {
-            throw new Error("Level must be between 1 and 10.");
+        if (level < 0 || level > 10) {
+            throw new Error("Level must be between 0 and 10.");
         }
         return this.BUY_LICENSE_COMMISSION_RATES[level as keyof typeof this.BUY_LICENSE_COMMISSION_RATES] || 0;
     }
 
     public static getSalesRequirement(level: number): number {
-        if (level < 1 || level > 10) {
-            throw new Error("Level must be between 1 and 10.");
+        if (level < 0 || level > 10) {
+            throw new Error("Level must be between 0 and 10.");
         }
         return this.SALES_REQUIREMENTS[level as keyof typeof this.SALES_REQUIREMENTS] || 0;
     }
 
     public static getF1CountRequirement(level: number): number {
-        if (level < 1 || level > 10) {
-            throw new Error("Level must be between 1 and 10.");
+        if (level < 0 || level > 10) {
+            throw new Error("Level must be between 0 and 10.");
         }
         return this.F1_COUNT_REQUIREMENTS[level as keyof typeof this.F1_COUNT_REQUIREMENTS] || 0;
     }
 
     public static getMiningRewardCommissionRate(level: number): number {
-        if (level < 1 || level > 10) {
-            throw new Error("Level must be between 1 and 10.");
+        if (level < 0 || level > 10) {
+            throw new Error("Level must be between 0 and 10.");
         }
         return this.MINING_REWARD_COMMISSION_RATES[level as keyof typeof this.MINING_REWARD_COMMISSION_RATES] || 0;
     }
