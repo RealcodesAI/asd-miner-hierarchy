@@ -450,7 +450,7 @@ export class Node {
         this.updateLevel();
 
         const parent = this.getParent();
-        if (parent) {
+        if (parent && parent.getLevel() > 0) {
             if (parent.validateParentLevel()) {
                 const commissionRate = Node.getBuyLicenseCommissionRate(parent.getLevel());
                 const commission = quantity * licensePrice * commissionRate;
@@ -518,7 +518,7 @@ export class Node {
 
     private processMiningRewardCommission(amount: number, maxRewardCommission: number): number {
         const parent = this.getParent();
-        if (parent) {
+        if (parent && parent.getLevel() > 0) {
             if (!parent.validateParentLevel()) {
                 Logger.warn(`Parent ${parent.username} không đủ điều kiện nhận hoa hồng đào.`);
                 return 0;

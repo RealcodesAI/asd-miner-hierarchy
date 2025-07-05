@@ -79,6 +79,8 @@ describe("Node - Buy License Scenarios", () => {
                 configureNode(parent, testLevel, { qualified: true });
                 child.buyLicense(1);
                 expect(parent.getTotalCommission()).toBe(60); // 1 license * 600 * 0.1 = 60
+                expect(child.getTotalLicensePurchase()).toBe(1);
+                expect(child.getTotalLicensePurchaseValue()).toBe(600);
             });
         })
     });
