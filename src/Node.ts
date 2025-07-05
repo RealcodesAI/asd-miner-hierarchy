@@ -10,6 +10,7 @@ export class Node {
     public children: Node[];
     public totalSystemSales: number; // Tổng doanh số mua license của tất cả các node con từ từ F1 đến F3
     public totalLicensePurchase: number; // Tổng số license đã mua
+    public totalLicensePurchaseValue: number; // Tổng tiền đã mua license (tính theo giá license)
     public buyLicenseCommission: number; // Hoa hồng mua license cho user bố trực tiếp
     public miningRewardCommission: number; // Hoa hồng thưởng đào ASD cho user bố trực tiếp
     public miningReward: number; // Thưởng đào ASD cho user này
@@ -17,6 +18,7 @@ export class Node {
     public miningRewardOtherCommission: number; // Phần hoa hồng đào ASD cho các hoạt động khác (nếu có)
     public buyLicenseCommissionReceived: number; // Hoa hồng mua license đã nhận (Dùng để check maxout)
     public totalMining: number; // Tổng số ASD đã đào được
+    public totalF1Count: number; // Tổng số F1 (mua 3+ license) của user này
 
     constructor(_id: number, _username: string | number, _level: number = 0) {
         this.id = _id;
@@ -33,6 +35,8 @@ export class Node {
         this.miningRewardOtherCommission = 0;
         this.buyLicenseCommissionReceived = 0;
         this.totalMining = 0;
+        this.totalLicensePurchaseValue = 0;
+        this.totalF1Count = 0; // Khởi tạo tổng số F1
     }
 
     // Getters and Setters
@@ -129,6 +133,30 @@ export class Node {
         }
 
         this.totalMining = _totalMining;
+    }
+
+    public getTotalLicensePurchaseValue(): number {
+        return this.totalLicensePurchaseValue;
+    }
+
+    public setTotalLicensePurchaseValue(_totalLicensePurchaseValue: number): void {
+        if (_totalLicensePurchaseValue < 0) {
+            throw new Error("Total license purchase value cannot be negative.");
+        }
+
+        this.totalLicensePurchaseValue = _totalLicensePurchaseValue;
+    }
+
+    public setTotalF1Count(_totalF1Count: number): void {
+        if (_totalF1Count < 0) {
+            throw new Error("Total F1 count cannot be negative.");
+        }
+
+        this.totalF1Count = _totalF1Count;
+    }
+
+    public getTotalF1Count(): number {
+        return this.totalF1Count;
     }
 
     public getBuyLicenseCommission(): number {
@@ -352,9 +380,7 @@ export class Node {
         }
 
         // Kiểm tra xem số lượng F1 (mua 3+ license) có đủ để nhận hoa hồng không
-        const f1Count = this.getChildren().filter(child => child.getTotalLicensePurchase() >= 3).length;
-
-        if (f1Count < Node.getF1CountRequirement(currentLevel)) {
+        if (this.getTotalF1Count() < Node.getF1CountRequirement(currentLevel)) {
             Logger.warn(`Parent ${this.username} không đủ F1 (3+ licenses) cho level ${currentLevel}.`);
             return false;
         }
@@ -369,8 +395,7 @@ export class Node {
         for (let level = startLevel; level <= 10; level++) {
             const hasEnoughLicenses = this.totalLicensePurchase >= Node.getLicenseRequirement(level);
             const hasEnoughSales = this.totalSystemSales >= Node.getSalesRequirement(level);
-            const f1Count = this.getChildren().filter(c => c.totalLicensePurchase >= 3).length;
-            const hasEnoughF1s = f1Count >= Node.getF1CountRequirement(level);
+            const hasEnoughF1s = this.totalF1Count >= Node.getF1CountRequirement(level);
 
             if (hasEnoughLicenses && hasEnoughSales && hasEnoughF1s) {
                 newLevel = level; // Đủ điều kiện, cập nhật level mới
@@ -387,7 +412,9 @@ export class Node {
 
     private checkMaxoutLicenseCommission(amount: number, licensePrice: number): number {
         // Lấy tổng doanh số mua license của bố
-        const totalSales = this.getTotalLicensePurchase() * licensePrice;
+        const totalSales = this.getTotalLicensePurchaseValue() === 0 ?
+            this.getTotalLicensePurchase() * licensePrice :
+            this.getTotalLicensePurchaseValue();
         // Lấy hoa hồng mua license đã nhận của bố
         const receivedCommission = this.getBuyLicenseCommissionReceived();
 

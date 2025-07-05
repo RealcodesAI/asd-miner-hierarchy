@@ -25,16 +25,8 @@ const configureNode = (node: Node, level: number, options: {
 
     node.setTotalLicensePurchase(requiredLicenses);
     node.setTotalSystemSales(requiredSales);
-
-    // Xóa các con cũ để thêm F1 mới
-    const childToKeep = node.getChildren().find(child => child.getId() === 2);
-    node.children = childToKeep ? [childToKeep] : [];
-
-    for (let i = 0; i < requiredF1s; i++) {
-        const f1 = new Node(100 + i, 1100 + i);
-        f1.setTotalLicensePurchase(3); // F1 đủ điều kiện
-        node.addChild(f1);
-    }
+    node.setTotalLicensePurchaseValue(requiredLicenses * Node.LICENSE_PRICE);
+    node.setTotalF1Count(requiredF1s);
 };
 
 
@@ -121,6 +113,7 @@ describe("Node - Buy License Scenarios", () => {
         test("commission should be capped exactly at the maxout limit", () => {
             configureNode(parent, 1, { qualified: true });
             parent.setTotalLicensePurchase(10); // $6000 => Maxout $12000
+            parent.setTotalLicensePurchaseValue(10 * Node.LICENSE_PRICE); // $6000
             parent.setBuyLicenseCommissionReceived(11990); // Sắp đạt maxout, chỉ còn thiếu $10
 
             // Con mua 1 license, hoa hồng tiềm năng là $60
@@ -141,10 +134,7 @@ describe("Node - Buy License Scenarios", () => {
 
             // Thiết lập sẵn điều kiện sales và F1
             node.setTotalSystemSales(Node.getSalesRequirement(1));
-            const f1 = new Node(10, 110); f1.setTotalLicensePurchase(3);
-            const f2 = new Node(11, 111); f2.setTotalLicensePurchase(3);
-            node.addChild(f1);
-            node.addChild(f2);
+            node.setTotalF1Count(Node.getF1CountRequirement(1));
 
             // Mua license cuối cùng để đủ điều kiện
             node.buyLicense(Node.getLicenseRequirement(1));
@@ -161,10 +151,7 @@ describe("Node - Buy License Scenarios", () => {
             // Một hành động mua số lượng lớn license, thỏa mãn điều kiện lên đến Lv3
             const licensesForLv3 = Node.getLicenseRequirement(3);
             node.setTotalSystemSales(Node.getSalesRequirement(3));
-
-            // Thêm F1 cho Lv3
-            const f3 = new Node(12, 112); f3.setTotalLicensePurchase(3);
-            node.addChild(f3);
+            node.setTotalF1Count(Node.getF1CountRequirement(3));
 
             // Mua đủ license để nhảy cấp
             node.buyLicense(licensesForLv3 - node.getTotalLicensePurchase());

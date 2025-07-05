@@ -17,13 +17,8 @@ const configureNode = (node: Node, level: number, options: {
 
     node.setTotalLicensePurchase(requiredLicenses);
     node.setTotalSystemSales(requiredSales);
-
-    [...node.getChildren()].forEach(child => node.removeChild(child));
-    for (let i = 0; i < requiredF1s; i++) {
-        const f1 = new Node(100 + i, 1100 + i);
-        f1.setTotalLicensePurchase(3);
-        node.addChild(f1);
-    }
+    node.setTotalLicensePurchaseValue(requiredLicenses * Node.LICENSE_PRICE);
+    node.setTotalF1Count(requiredF1s);
 };
 
 describe("Node - Mining Reward Scenarios", () => {
